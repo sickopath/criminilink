@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  background: #ffffff;
+  font-family: Inter, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 1024px;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(0, 212, 255, 0.09), transparent 28%),
+    radial-gradient(circle at 74% 12%, rgba(124, 58, 237, 0.07), transparent 24%),
+    #ffffff;
+  color: #e5e7eb;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.32);
+  border-radius: 999px;
+}
+
+.glass {
+  background: rgba(17, 24, 39, 0.78);
+  border: 1px solid rgba(75, 85, 99, 0.55);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.28);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.35rem;
+  border-radius: 8px;
+  border: 1px solid rgba(75, 85, 99, 0.8);
+  background: rgba(31, 41, 55, 0.86);
+  color: #e5e7eb;
+  padding: 0.45rem 0.75rem;
+  font-weight: 700;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(0, 212, 255, 0.75);
+  background: rgba(0, 212, 255, 0.1);
+  color: #ffffff;
+}
+
+.btn-primary {
+  border-color: rgba(0, 212, 255, 0.85);
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.95), rgba(124, 58, 237, 0.82));
+  color: #03111d;
+  box-shadow: 0 0 24px rgba(0, 212, 255, 0.24);
+}
+
+.btn-danger:hover {
+  border-color: rgba(239, 68, 68, 0.9);
+  background: rgba(239, 68, 68, 0.14);
+}
+
+.input {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(75, 85, 99, 0.78);
+  background: rgba(10, 14, 26, 0.78);
+  color: #f9fafb;
+  outline: none;
+  padding: 0.62rem 0.75rem;
+}
+
+.input:focus {
+  border-color: rgba(0, 212, 255, 0.82);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.12);
+}
+
+.metric-number {
+  font-family: 'IBM Plex Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-row-hover:hover {
+  background: rgba(0, 212, 255, 0.08);
+}
+
+.cy-tooltip {
+  pointer-events: none;
+  position: fixed;
+  z-index: 60;
+  max-width: 300px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 212, 255, 0.45);
+  background: rgba(10, 14, 26, 0.94);
+  padding: 0.55rem 0.7rem;
+  color: #f9fafb;
+  font-size: 0.78rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
