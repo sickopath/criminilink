@@ -19,7 +19,7 @@ export default function Sidebar({ onLoadSample }) {
 
   const confirmDeleteDatabase = (db) => {
     const confirmed = window.confirm(
-      `Supprimer définitivement la BD "${db.name}"?\n\nCette action retirera ${db.nodes.length} entités et ${db.edges.length} liens de CrimLink.`,
+      `Supprimer définitivement la BD "${db.name}"?\n\nCette action retirera ${db.nodes.length} entités et ${db.edges.length} liens de CriminLink.`,
     );
     if (confirmed) actions.deleteDatabase(db.id);
   };

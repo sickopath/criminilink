@@ -34,7 +34,7 @@ export default function ImportModal({ open, onClose }) {
   if (!open) return null;
 
   const handleParsed = (parsed, label) => {
-    if (parsed.errors?.length) console.log('CrimLink CSV parse warnings', parsed.errors);
+    if (parsed.errors?.length) console.log('CriminLink CSV parse warnings', parsed.errors);
     setRows(parsed.rows);
     setHeaders(parsed.headers);
     setMapping(detectColumnMapping(parsed.headers));
@@ -52,12 +52,12 @@ export default function ImportModal({ open, onClose }) {
     }
   };
 
-  const importNow = () => {
+  const importNow = async () => {
     try {
       if (!name.trim()) throw new Error('Database name is required.');
       const tempDbId = 'db-import';
       const graph = buildGraphFromRows(rows, mapping, tempDbId, name.trim(), '#00d4ff');
-      const ok = actions.addDatabase({ name, nodes: graph.nodes, edges: graph.edges });
+      const ok = await actions.addDatabase({ name, nodes: graph.nodes, edges: graph.edges });
       if (ok) {
         toast.success(`${name.trim()} imported.`);
         setName('');

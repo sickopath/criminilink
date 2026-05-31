@@ -1,23 +1,27 @@
-# CrimLink
+# CriminLink
 
-CrimLink is a browser-based criminal intelligence relationship graph analyzer. It lets investigators import CSV relationship data, manage multiple graph databases, visualize links with Cytoscape.js, and inspect social network analysis metrics from a single React/Vite interface.
+CriminLink est une application web d'analyse de graphes relationnels pour le renseignement criminel. Elle permet d'importer des fichiers CSV, de gérer plusieurs bases de données d'enquête, de visualiser les relations avec Cytoscape.js et de consulter des métriques d'analyse de réseaux sociaux.
 
-## Features
+## Fonctionnalités
 
-- Import one or more CSV graph databases.
-- Show, hide, persist, and delete databases independently.
-- Visualize directed relationship graphs with Cytoscape.js.
-- Switch between force, hierarchical, organic, centrality, and grid layouts.
-- Minimize link crossings on the visible or filtered graph.
-- Search entities and filter by relationship type, community, and minimum degree.
-- Hide entities that do not match active filters.
-- Inspect node details, connected relationships, ego networks, and per-node SNA metrics.
-- Inspect all relationships between two entities from edge popups.
-- Compute global graph metrics, rankings, PageRank, clustering, and Louvain communities.
-- Export PNG, visible graph CSV, and SNA metrics CSV.
-- Persist imported databases in local browser storage.
+- Importation de bases relationnelles à partir de fichiers CSV.
+- Gestion de plusieurs BD simultanées.
+- Affichage, masquage et suppression de chaque BD.
+- Persistance des BD dans une base SQLite locale.
+- Visualisation de graphes dirigés avec Cytoscape.js.
+- Layouts disponibles: forces, hiérarchique, organique, centralité et grille.
+- Fonction de décroisement pour réduire les croisements entre liens.
+- Recherche d'entités.
+- Filtres par type de relation, communauté et degré minimum.
+- Mode pour cacher complètement les entités hors filtre.
+- Fiche détaillée pour chaque entité.
+- Affichage des relations multiples entre deux entités.
+- Réseau ego autour d'une entité sélectionnée.
+- Métriques SNA globales et par noeud.
+- Détection de communautés avec Louvain.
+- Export PNG, CSV du graphe visible et CSV des métriques.
 
-## Tech Stack
+## Stack technique
 
 - React 18
 - Vite
@@ -29,69 +33,79 @@ CrimLink is a browser-based criminal intelligence relationship graph analyzer. I
 - graphology
 - graphology-metrics
 - graphology-communities-louvain
+- Express
+- SQLite avec better-sqlite3
 - papaparse
 - Zustand
 - lucide-react
 - react-hot-toast
 
-## Getting Started
+## Installation
 
-Install dependencies and start the development server:
+Installez les dépendances:
 
 ```bash
 npm install
+```
+
+Lancez l'application:
+
+```bash
 npm run dev
 ```
 
-The app runs locally at:
+La commande démarre deux services:
+
+- l'API SQLite sur `http://localhost:5174`
+- l'interface Vite sur `http://localhost:5173`
+
+Ouvrez ensuite:
 
 ```text
 http://localhost:5173/
 ```
 
-Build for production:
+## Base SQLite
 
-```bash
-npm run build
+Les BD importées sont sauvegardées dans:
+
+```text
+server/data/criminlink.sqlite
 ```
 
-Preview the production build:
+Ce fichier n'est pas versionné par Git. Il est créé automatiquement au démarrage du serveur.
 
-```bash
-npm run preview
-```
+## Format CSV
 
-## CSV Format
-
-CrimLink expects a CSV with these fields:
+CriminLink attend un fichier CSV avec les colonnes suivantes:
 
 ```csv
 node1,node2,relationship,context
 Marco Vitali,Tony Ferrante,associé à,Marco Vitali et Tony Ferrante ont été observés ensemble.
 ```
 
-Required columns:
+Colonnes requises:
 
-- `node1`: source entity name
-- `node2`: target entity name
-- `relationship`: relationship type or label
-- `context`: investigative context sentence
+- `node1`: entité source
+- `node2`: entité cible
+- `relationship`: type ou libellé de la relation
+- `context`: phrase de contexte d'enquête
 
-Comma and semicolon delimiters are auto-detected. Columns can also be mapped manually during import.
+Les séparateurs virgule et point-virgule sont détectés automatiquement. L'interface permet aussi de mapper manuellement les colonnes lors de l'import.
 
-## Sample Data
+## Données de démonstration
 
-A fictional sample dataset is included at:
+Un fichier fictif est inclus:
 
 ```text
 public/sample-data.csv
 ```
 
-Use the **Load Sample Data** button in the app to load it as `Opération Cargo`.
+Le bouton **Load Sample Data** charge ce fichier sous le nom `Opération Cargo`.
 
-## Entity Types
+## Types d'entités
 
-CrimLink automatically infers basic entity types from names and values:
+CriminLink infère automatiquement un type d'entité à partir du nom ou de la valeur:
 
 - Personne
 - Compagnie
@@ -102,14 +116,31 @@ CrimLink automatically infers basic entity types from names and values:
 - Info financière
 - Autre
 
-These types are represented with visual styling on graph nodes and listed in the sidebar legend.
+Ces types sont visibles dans la légende et sur les noeuds du graphe.
 
-## Persistence
+## Commandes
 
-Imported databases are saved in `localStorage`, so they remain available after a browser refresh. Deleting a database from the sidebar removes it from local persistence after confirmation.
+Développement:
+
+```bash
+npm run dev
+```
+
+Build de production:
+
+```bash
+npm run build
+```
+
+Prévisualisation du build:
+
+```bash
+npm run preview
+```
 
 ## Notes
 
-- The app is a client-side SPA and does not require a backend.
-- Large graphs can take longer to layout, especially with crossing minimization.
-- Browser storage limits apply when importing very large datasets.
+- CriminLink utilise SQLite pour la persistance des BD.
+- Les données restent sur la machine locale, dans le fichier SQLite.
+- Les très grands graphes peuvent ralentir certains layouts et le décroisement.
+- Le mode filtre caché garde les entités hors filtre invisibles jusqu'au retrait du filtre.

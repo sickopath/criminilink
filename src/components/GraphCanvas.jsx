@@ -101,7 +101,7 @@ function mergeActiveGraph(databases, metrics) {
 function downloadPng(dataUrl) {
   const link = document.createElement('a');
   link.href = dataUrl;
-  link.download = 'crimlink-graph.png';
+  link.download = 'criminlink-graph.png';
   link.click();
 }
 
@@ -215,7 +215,7 @@ async function minimizeCrossings(cy, metrics) {
     await waitForLayout(layout);
     spreadCollection(layoutCollection, 1.08);
     const score = countEdgeCrossings(layoutCollection);
-    console.log('CrimLink crossing candidate', options.name, options.rankDir || '', score);
+    console.log('CriminLink crossing candidate', options.name, options.rankDir || '', score);
     if (score < best.score) {
       best = {
         score,
@@ -278,7 +278,7 @@ const GraphCanvas = forwardRef(function GraphCanvas(_, ref) {
 
   useEffect(() => {
     if (!containerRef.current) return undefined;
-    console.log('CrimLink initializing Cytoscape');
+    console.log('CriminLink initializing Cytoscape');
     cyRef.current = cytoscape({
       container: containerRef.current,
       elements,
@@ -293,12 +293,12 @@ const GraphCanvas = forwardRef(function GraphCanvas(_, ref) {
     cy.on('tap', 'node', (event) => {
       const data = event.target.data();
       actions.setSelectedNode(data);
-      console.log('CrimLink node clicked', data);
+      console.log('CriminLink node clicked', data);
     });
     cy.on('tap', 'edge', (event) => {
       const data = event.target.data();
       actions.setSelectedEdge({ source: data.source, target: data.target, relationships: data.relationships || [data] });
-      console.log('CrimLink edge clicked', data);
+      console.log('CriminLink edge clicked', data);
     });
     cy.on('mouseover', 'node', (event) => {
       const node = event.target;
@@ -343,7 +343,7 @@ const GraphCanvas = forwardRef(function GraphCanvas(_, ref) {
         try {
           setMiniMap(cy.png({ scale: 0.18, full: true, bg: '#ffffff' }));
         } catch (error) {
-          console.log('CrimLink minimap update failed', error);
+          console.log('CriminLink minimap update failed', error);
         }
       }, 250);
     });
@@ -357,7 +357,7 @@ const GraphCanvas = forwardRef(function GraphCanvas(_, ref) {
     cy.style(getCytoscapeStyles({ communityMode }));
     cy.layout(layoutOptions(layout, snaMetrics.nodeMetrics)).run();
     applyFilters(cy, filters, focusNode, snaMetrics);
-    console.log('CrimLink graph elements updated', elements.length);
+    console.log('CriminLink graph elements updated', elements.length);
   }, [elements, communityMode]);
 
   useEffect(() => {

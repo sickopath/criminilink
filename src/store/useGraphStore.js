@@ -4,7 +4,6 @@ import { databasePalette } from '../utils/cytoscapeStyles';
 import { computeSnaMetrics } from '../utils/snaMetrics';
 
 const MAX_DATABASES = 20;
-const STORAGE_KEY = 'crimlink.persistedDatabases.v1';
 
 function makeId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -14,40 +13,43 @@ function getActiveDatabases(databases) {
   return databases.filter((db) => db.active);
 }
 
-function getPersistedDatabases() {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed.databases)) return [];
-    return parsed.databases.map((db) => ({ ...db, active: db.active !== false }));
-  } catch (error) {
-    console.log('CrimLink persistence read failed', error);
-    return [];
-  }
+function metricsFor(databases) {
+  return computeSnaMetrics(getActiveDatabases(databases));
 }
 
-function savePersistedDatabases(databases) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ databases }));
-  } catch (error) {
-    console.log('CrimLink persistence write failed', error);
-    toast.error('Impossible de sauvegarder les BD localement.');
-  }
-}
+async function apiJson(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    },
+  });
 
-const initialDatabases = getPersistedDatabases();
-const initialMetrics = computeSnaMetrics(getActiveDatabases(initialDatabases));
+  if (!response.ok) {
+    let message = 'Erreur SQLite.';
+    try {
+      const payload = await response.json();
+      message = payload.error || message;
+    } catch {
+      message = response.statusText || message;
+    }
+    throw new Error(message);
+  }
+
+  if (response.status === 204) return null;
+  return response.json();
+}
 
 export const useGraphStore = create((set, get) => ({
-  databases: initialDatabases,
-  activeDbIds: initialDatabases.filter((db) => db.active).map((db) => db.id),
+  databases: [],
+  activeDbIds: [],
   selectedNode: null,
   selectedEdge: null,
-  snaMetrics: initialMetrics,
-  communities: initialMetrics.communities,
+  snaMetrics: computeSnaMetrics([]),
+  communities: {},
+  sqliteReady: false,
+  sqliteError: null,
   filters: {
     searchQuery: '',
     relationshipTypes: [],
@@ -61,21 +63,42 @@ export const useGraphStore = create((set, get) => ({
   highlightedNodeId: null,
   rightPanelOpen: true,
   actions: {
-    addDatabase: ({ name, nodes, edges }) => {
+    loadDatabases: async () => {
+      try {
+        const payload = await apiJson('/api/databases');
+        const databases = payload.databases || [];
+        const snaMetrics = metricsFor(databases);
+        set({
+          databases,
+          activeDbIds: databases.filter((db) => db.active).map((db) => db.id),
+          snaMetrics,
+          communities: snaMetrics.communities,
+          sqliteReady: true,
+          sqliteError: null,
+        });
+        console.log('CriminLink databases loaded from SQLite', databases.length);
+      } catch (error) {
+        console.log('CriminLink SQLite load failed', error);
+        set({ sqliteReady: false, sqliteError: error.message });
+        toast.error(`SQLite indisponible: ${error.message}`);
+      }
+    },
+    addDatabase: async ({ name, nodes, edges }) => {
       const state = get();
       if (state.databases.length >= MAX_DATABASES) {
-        toast.error('Maximum of 20 databases reached.');
+        toast.error('Maximum de 20 BD atteint.');
         return false;
       }
       const trimmed = name.trim();
       if (!trimmed) {
-        toast.error('Database name is required.');
+        toast.error('Le nom de la BD est obligatoire.');
         return false;
       }
       if (state.databases.some((db) => db.name.toLowerCase() === trimmed.toLowerCase())) {
-        toast.error('A database with this name already exists.');
+        toast.error('Une BD avec ce nom existe déjà.');
         return false;
       }
+
       const id = makeId('db');
       const color = databasePalette[state.databases.length % databasePalette.length];
       const db = {
@@ -84,15 +107,18 @@ export const useGraphStore = create((set, get) => ({
         color,
         nodes: nodes.map((node) => ({
           ...node,
+          id: `${id}::${node.canonicalId || node.label}`,
           dbIds: [id],
           dbNames: [trimmed],
           dbColors: [color],
           color,
           primaryDbId: id,
         })),
-        edges: edges.map((edge) => ({
+        edges: edges.map((edge, index) => ({
           ...edge,
-          id: edge.id.replace(/^db-[^:]+/, id),
+          id: `${id}::edge::${index}::${edge.source}::${edge.target}`,
+          sourceId: `${id}::${edge.source}`,
+          targetId: `${id}::${edge.target}`,
           dbId: id,
           dbName: trimmed,
           dbColor: color,
@@ -100,62 +126,72 @@ export const useGraphStore = create((set, get) => ({
         active: true,
         createdAt: new Date().toISOString(),
       };
-      const databases = [...state.databases, db];
-      const snaMetrics = computeSnaMetrics(getActiveDatabases(databases));
-      savePersistedDatabases(databases);
-      set({
-        databases,
-        activeDbIds: databases.filter((item) => item.active).map((item) => item.id),
-        snaMetrics,
-        communities: snaMetrics.communities,
-      });
-      if (edges.length > 500) toast('Large graph loaded. Layouts may take a moment.', { icon: '!' });
-      console.log('CrimLink database added', db);
-      return true;
+
+      try {
+        const payload = await apiJson('/api/databases', {
+          method: 'POST',
+          body: JSON.stringify(db),
+        });
+        const databases = [...state.databases, payload.database];
+        const snaMetrics = metricsFor(databases);
+        set({
+          databases,
+          activeDbIds: databases.filter((item) => item.active).map((item) => item.id),
+          snaMetrics,
+          communities: snaMetrics.communities,
+          sqliteReady: true,
+          sqliteError: null,
+        });
+        if (edges.length > 500) toast('Grand graphe chargé. Les layouts peuvent prendre un moment.', { icon: '!' });
+        console.log('CriminLink database added to SQLite', payload.database);
+        return true;
+      } catch (error) {
+        toast.error(error.message);
+        return false;
+      }
     },
-    importDatabase: ({ id, name, color, nodes, edges }) => {
-      const state = get();
-      const db = { id, name, color, nodes, edges, active: true, createdAt: new Date().toISOString() };
-      const databases = [...state.databases, db];
-      const snaMetrics = computeSnaMetrics(getActiveDatabases(databases));
-      savePersistedDatabases(databases);
-      set({
-        databases,
-        activeDbIds: databases.filter((item) => item.active).map((item) => item.id),
-        snaMetrics,
-        communities: snaMetrics.communities,
-      });
-      return true;
-    },
-    toggleDatabase: (id) => {
+    toggleDatabase: async (id) => {
       const current = get().databases;
       const target = current.find((db) => db.id === id);
-      if (target?.active && current.filter((db) => db.active).length === 1) {
+      if (!target) return;
+      if (target.active && current.filter((db) => db.active).length === 1) {
         toast('Au moins une BD doit rester visible.');
         return;
       }
-      const databases = current.map((db) => (db.id === id ? { ...db, active: !db.active } : db));
-      const snaMetrics = computeSnaMetrics(getActiveDatabases(databases));
-      savePersistedDatabases(databases);
-      set({
-        databases,
-        activeDbIds: databases.filter((db) => db.active).map((db) => db.id),
-        snaMetrics,
-        communities: snaMetrics.communities,
-      });
+
+      try {
+        const payload = await apiJson(`/api/databases/${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ active: !target.active }),
+        });
+        const databases = current.map((db) => (db.id === id ? payload.database : db));
+        const snaMetrics = metricsFor(databases);
+        set({
+          databases,
+          activeDbIds: databases.filter((db) => db.active).map((db) => db.id),
+          snaMetrics,
+          communities: snaMetrics.communities,
+        });
+      } catch (error) {
+        toast.error(error.message);
+      }
     },
-    deleteDatabase: (id) => {
-      const databases = get().databases.filter((db) => db.id !== id);
-      const snaMetrics = computeSnaMetrics(getActiveDatabases(databases));
-      savePersistedDatabases(databases);
-      set({
-        databases,
-        activeDbIds: databases.filter((db) => db.active).map((db) => db.id),
-        snaMetrics,
-        communities: snaMetrics.communities,
-        selectedNode: null,
-        selectedEdge: null,
-      });
+    deleteDatabase: async (id) => {
+      try {
+        await apiJson(`/api/databases/${id}`, { method: 'DELETE' });
+        const databases = get().databases.filter((db) => db.id !== id);
+        const snaMetrics = metricsFor(databases);
+        set({
+          databases,
+          activeDbIds: databases.filter((db) => db.active).map((db) => db.id),
+          snaMetrics,
+          communities: snaMetrics.communities,
+          selectedNode: null,
+          selectedEdge: null,
+        });
+      } catch (error) {
+        toast.error(error.message);
+      }
     },
     setSelectedNode: (node) => set({ selectedNode: node, selectedEdge: null }),
     setSelectedEdge: (edge) => set({ selectedEdge: edge, selectedNode: null }),
@@ -182,20 +218,24 @@ export const useGraphStore = create((set, get) => ({
     setHighlightedNodeId: (nodeId) => set({ highlightedNodeId: nodeId }),
     toggleRightPanel: () => set((state) => ({ rightPanelOpen: !state.rightPanelOpen })),
     recomputeMetrics: () => {
-      const snaMetrics = computeSnaMetrics(getActiveDatabases(get().databases));
+      const snaMetrics = metricsFor(get().databases);
       set({ snaMetrics, communities: snaMetrics.communities });
     },
-    clearPersistedDatabases: () => {
-      savePersistedDatabases([]);
-      const snaMetrics = computeSnaMetrics([]);
-      set({
-        databases: [],
-        activeDbIds: [],
-        selectedNode: null,
-        selectedEdge: null,
-        snaMetrics,
-        communities: snaMetrics.communities,
-      });
+    clearPersistedDatabases: async () => {
+      try {
+        await apiJson('/api/databases', { method: 'DELETE' });
+        const snaMetrics = computeSnaMetrics([]);
+        set({
+          databases: [],
+          activeDbIds: [],
+          selectedNode: null,
+          selectedEdge: null,
+          snaMetrics,
+          communities: snaMetrics.communities,
+        });
+      } catch (error) {
+        toast.error(error.message);
+      }
     },
   },
 }));

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import EdgePopup from './components/EdgePopup';
 import GraphCanvas from './components/GraphCanvas';
@@ -21,7 +21,7 @@ class GraphErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.log('CrimLink graph boundary caught error', error, info);
+    console.log('CriminLink graph boundary caught error', error, info);
   }
 
   render() {
@@ -46,6 +46,10 @@ export default function App() {
   const actions = useGraphStore((state) => state.actions);
   const databases = useGraphStore((state) => state.databases);
 
+  useEffect(() => {
+    actions.loadDatabases();
+  }, [actions]);
+
   const loadSample = async () => {
     try {
       if (databases.some((db) => db.name === 'Opération Cargo')) {
@@ -57,8 +61,8 @@ export default function App() {
       const parsed = parseCsvText(text);
       const mapping = detectColumnMapping(parsed.headers);
       const graph = buildGraphFromRows(parsed.rows, mapping, 'db-sample', 'Opération Cargo', '#00d4ff');
-      actions.addDatabase({ name: 'Opération Cargo', nodes: graph.nodes, edges: graph.edges });
-      toast.success('Sample data loaded.');
+      const ok = await actions.addDatabase({ name: 'Opération Cargo', nodes: graph.nodes, edges: graph.edges });
+      if (ok) toast.success('Sample data loaded.');
     } catch (error) {
       toast.error(error.message || 'Unable to load sample data.');
     }

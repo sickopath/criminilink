@@ -39,7 +39,7 @@ export default function TopBar({ onImport, onGraphCommand }) {
         <div className="flex items-center gap-3">
           <span className="h-3 w-3 rounded-full bg-cyan shadow-cyan animate-pulseDot" />
           <div>
-            <h1 className="font-heading text-4xl font-bold tracking-[0.28em] text-white">CRIMLINK</h1>
+            <h1 className="font-heading text-4xl font-bold tracking-[0.28em] text-white">CRIMINLINK</h1>
             <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-cyan/80">Analyseur de graphes d'enquête</p>
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function TopBar({ onImport, onGraphCommand }) {
         <button
           className="btn"
           onClick={() => {
-            download('crimlink-visible-graph.csv', graphToCsv(visibleEdges));
+            download('criminlink-visible-graph.csv', graphToCsv(visibleEdges));
             toast.success('Visible graph exported.');
           }}
         >
@@ -118,7 +118,7 @@ export default function TopBar({ onImport, onGraphCommand }) {
         <button
           className="btn"
           onClick={() => {
-            download('crimlink-sna-metrics.csv', metricsToCsv(snaMetrics));
+            download('criminlink-sna-metrics.csv', metricsToCsv(snaMetrics));
             toast.success('SNA metrics exported.');
           }}
         >
