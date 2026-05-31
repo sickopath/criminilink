@@ -138,6 +138,99 @@ Prévisualisation du build:
 npm run preview
 ```
 
+## Mise en ligne sur un site web
+
+L'application ne peut pas être publiée uniquement comme un site statique, car elle utilise une API Node/Express et une base SQLite. L'hébergement doit exécuter le serveur Node et conserver le fichier SQLite sur un disque persistant.
+
+### 1. Préparer le build
+
+Installez les dépendances et générez l'interface de production:
+
+```bash
+npm install
+npm run build
+```
+
+Le frontend compilé est placé dans:
+
+```text
+dist/
+```
+
+### 2. Servir le frontend en production
+
+Pour un déploiement complet, le serveur Express devrait aussi servir les fichiers statiques de `dist/`. Il faut ajouter dans `server/index.js`, après les routes `/api`:
+
+```js
+app.use(express.static(path.join(__dirname, '../dist')));
+
+app.get('*', (_request, response) => {
+  response.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+```
+
+Il est ensuite possible de démarrer l'application avec:
+
+```bash
+node server/index.js
+```
+
+### 3. Choisir un hébergeur compatible
+
+Choisissez un hébergeur qui supporte:
+
+- une application Node.js persistante;
+- un disque ou volume persistant;
+- une variable d'environnement pour le port;
+- HTTPS;
+- des sauvegardes du fichier SQLite.
+
+Exemples adaptés: Railway, Render avec disque persistant, Fly.io avec volume, un VPS ou un serveur institutionnel.
+
+Un hébergement statique comme GitHub Pages ne suffit pas pour la version SQLite.
+
+### 4. Conserver la base SQLite
+
+La base est créée dans:
+
+```text
+server/data/criminlink.sqlite
+```
+
+En production, ce dossier doit être monté sur un disque persistant. Sinon, les données peuvent disparaître lors d'un redémarrage ou d'un redéploiement.
+
+Prévoyez également:
+
+- une sauvegarde régulière du fichier SQLite;
+- une procédure de restauration;
+- des permissions système limitées au processus Node;
+- un chiffrement du disque si les données sont sensibles.
+
+### 5. Configurer le domaine et HTTPS
+
+Configurez un nom de domaine, par exemple:
+
+```text
+https://criminlink.example.org
+```
+
+Utilisez le HTTPS obligatoire. Avec un VPS, placez un reverse proxy comme Nginx ou Caddy devant l'application Node. Sur une plateforme gérée, activez le domaine personnalisé et le certificat TLS depuis le tableau de bord.
+
+### 6. Ajouter une authentification avant usage réel
+
+La version actuelle ne possède pas de comptes utilisateurs ni de contrôle d'accès. Avant de publier des données d'enquête réelles, ajoutez:
+
+- une authentification;
+- des rôles et permissions;
+- une journalisation des accès et suppressions;
+- une protection contre les requêtes abusives;
+- une politique de sauvegarde;
+- une validation de sécurité.
+
+### 7. Prévoir une migration si l'usage augmente
+
+SQLite convient à une instance unique avec un volume de données raisonnable. Pour plusieurs serveurs, plusieurs utilisateurs simultanés ou un environnement plus critique, migrez la persistance vers PostgreSQL ou une base équivalente.
+
 ## Notes
 
 - CriminLink utilise SQLite pour la persistance des BD.
